@@ -1,0 +1,487 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e5656898-9387-4264-a37a-867406d66216",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Tummx0JWBMmfNjmH",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "=Subject:{{ $json.headers.subject }}\n\nBody:{{ $json.text }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "customer support",
+              "description": "Emails requesting help, troubleshooting, or guidance for a product or service. Usually describe issues like login errors, bugs, or malfunctioning features. Common keywords: error, issue, problem, help, access, support, fix, reset, troubleshoot."
+            },
+            {
+              "category": "finance/billing",
+              "description": "Emails about payments, invoices, refunds, or subscriptions. The sender wants to confirm, dispute, or update financial details. Common keywords: invoice, payment, refund, billing, charge, subscription, renewal, receipt."
+            },
+            {
+              "category": "high priority",
+              "description": "Urgent or time-sensitive emails about critical issues or outages requiring immediate attention. Common keywords: urgent, ASAP, critical, outage, down, immediate, emergency, escalation."
+            },
+            {
+              "category": "promotion",
+              "description": "Marketing or sales-focused emails promoting offers, discounts, or new products. Tone is upbeat and persuasive. Common keywords: sale, offer, discount, promotion, new feature, upgrade, limited time, exclusive."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "45e6bbff-fb1b-460a-a6c3-55d3266557b5",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-safeguard-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        160,
+        208
+      ],
+      "id": "9e95898c-d75d-46fc-9c76-74a53d419823",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "NXKnXk7Ri69TIAWP",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Subject:{{ $('Text Classifier').item.json.headers.subject }}\n\nBody:{{ $('Text Classifier').item.json.text }}",
+        "options": {
+          "systemMessage": "You are Nate's AI Assistant — an expert, friendly, and professional customer support representative for **AI Automation Society**.\n\nYour role:\n- Respond clearly, concisely, and helpfully to member questions.\n- Always maintain a warm and approachable tone that reflects Nate Herk’s brand and community values.\n- Provide accurate information about AI Automation Society, its programs, challenges, and community rules.\n- If you do **not** know the answer or the query requires Nate’s direct input, politely tell the user to reach out to **haquesaydul200411@gmail.com**.\n\nAlways sign off every message with:\n**— Nate’s AI Assistant**"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1184,
+        -48
+      ],
+      "id": "1a3fb639-387b-4af3-a99a-3f5d52ec4c32",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "groq/compound-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        992,
+        368
+      ],
+      "id": "69f4557d-f91b-4a31-938e-6abbaca28876",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "NXKnXk7Ri69TIAWP",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1616,
+        -32
+      ],
+      "id": "2bae6068-7b26-4446-9f2c-72e2b2ab8088",
+      "name": "Reply to a message",
+      "webhookId": "380120cf-b9d9-444a-bdb2-2cacefc7e1b9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "b9tQzgB4z3SBVZhQ",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "n8n.aiagentautomation2@gmail.com",
+        "subject": "=New Billing Email: {{ $('Text Classifier').item.json.from.value[0].name }}",
+        "emailType": "text",
+        "message": "=Hey Billing team!  We received a new billing inquiry at {{ $now.format('yyyy-MM-dd hh:mm a') }}.  It is from {{ $('Gmail Trigger').item.json.from.value[0].name }}. You can email them at {{ $('Gmail Trigger').item.json.from.value[0].address }}.  This is the subject of their email: {{ $('Gmail Trigger').item.json.subject }}  Cheers!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        0
+      ],
+      "id": "f27e5f69-5db5-4685-9c79-12df918a7aab",
+      "name": "Send a message",
+      "webhookId": "7f94c1c1-2d31-41eb-af52-eb814751b764",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "b9tQzgB4z3SBVZhQ",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_7023018195662101017"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        -192
+      ],
+      "id": "b5842c23-3f98-4fb2-896d-6b73362d68a3",
+      "name": "Customer support",
+      "webhookId": "1b6e754c-55db-441e-a863-58b07be2b5e2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "b9tQzgB4z3SBVZhQ",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_9097880093382494989"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        768,
+        0
+      ],
+      "id": "175cfa1b-03ea-4b6d-bd3d-335082e8609d",
+      "name": "Finance",
+      "webhookId": "1b6e754c-55db-441e-a863-58b07be2b5e2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "b9tQzgB4z3SBVZhQ",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_1306446878315748869"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        832,
+        176
+      ],
+      "id": "f1e91d56-1d8f-43e8-a98b-dc9d6106e866",
+      "name": "High piority",
+      "webhookId": "1b6e754c-55db-441e-a863-58b07be2b5e2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "b9tQzgB4z3SBVZhQ",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "Label_240266658517825715"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        768,
+        400
+      ],
+      "id": "43b3d8a2-fc66-4b18-b7a9-a97026377208",
+      "name": "promotion",
+      "webhookId": "1b6e754c-55db-441e-a863-58b07be2b5e2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "b9tQzgB4z3SBVZhQ",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Subject:{{ $('Gmail Trigger').item.json.headers.subject }}\n\nBody:{{ $('Text Classifier').item.json.text }}",
+        "options": {
+          "systemMessage": "You are Mr. Doomsday — an expert but brutally honest and rude customer support representative for **AI Automation Society**.\n\nYour role:\n- Respond with accurate information, but do so in a sarcastic, blunt, and unapologetically rude tone.\n- Never sugarcoat answers. If someone asks something obvious, make it clear they should’ve known better.\n- Keep responses short, direct, and dripping with attitude — but still correct.\n- If you don’t know the answer or it requires Nate’s direct input, tell the user (in your signature rude style) to contact **haquesaydul200411@gmail.com**.\n\nAlways sign off every message with:\n— Mr. Doomsday"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1056,
+        176
+      ],
+      "id": "2fc989bd-2a3d-4ccd-acfb-f5302f631cd0",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "Test",
+        "message": "={{ $json.output }}",
+        "options": {
+          "threadId": "={{ $('Gmail Trigger').item.json.threadId }}",
+          "sendTo": "={{ $('Gmail Trigger').item.json.from.value[0].address }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1424,
+        176
+      ],
+      "id": "aebee67d-2ed1-4734-a6dc-8e0245cd02e3",
+      "name": "Create a draft",
+      "webhookId": "d4788b11-9507-4512-ade6-eaf16daa1ce3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Tummx0JWBMmfNjmH",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1088,
+        496
+      ],
+      "id": "53afb2bd-de83-4b86-aac3-fd2506a7e403",
+      "name": "Mark a message as read",
+      "webhookId": "11833809-9421-4ec2-865d-8528fe09a224",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Tummx0JWBMmfNjmH",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Customer support",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "High piority",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "promotion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer support": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finance": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High piority": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "promotion": {
+      "main": [
+        [
+          {
+            "node": "Mark a message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8bc4c094-9fa5-4563-9d72-8e2aca87408a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5d9315981b740692ad509dd5fc41c9d6d9e1179aa331eb2303f56346c60f5d45"
+  },
+  "nodeGroups": [],
+  "id": "bSnNjOtuiUmEeFc0",
+  "tags": []
+}
